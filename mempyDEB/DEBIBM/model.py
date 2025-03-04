@@ -53,10 +53,8 @@ glb = { # global parameters
     'V_patch':  0.5, # volume of a single patch
     'Xdot_in': 1250, # resource input rate
     'kX_out' : 0.1, # daily resource outflow rate
-    'C_W' : 0., # chemical stressor concentration
-    'Temp': 27, #Temperature imput (init with optimal value)
-      #Env. for Algae
-    'I': 100 #ligth intensity 
+    'C_W' : 0. # chemical stressor concentration
+
     }
 
 '''
@@ -67,7 +65,7 @@ spc = { # animal parameters
     'cv' : 0.1, # individual variability in DEB parameters, given as coefficient of variation 
     'Idot_max_rel_mean': 5, # maximum specific ingestion rate; theoretical population average
     'eta_IA_0': 0.5, # assimilation efficiency
-    'K_X': 0.068, # half-saturation constant for resource uptake #K_s in Phytoplankton#value form interface example  
+    'K_X': 0.5e3, # half-saturation constant for resource uptake
     'kappa': 0.9, # somatic allocation fraction
     'eta_AS_0' : 0.9, # growth effieciency (transformation from assimilates to structure)
     'eta_SA' : 0.9, # structural mobilization efficiency (transformation from structure to asismilates)
@@ -96,28 +94,6 @@ spc = { # animal parameters
     'ED50_h' : 2, # median effective damage
     'beta_h' : 1. # DRC slope
     }
-
-alg = {# algea parameters
-    'tmax' : 30, # max time
-    'D'    : 0.5, # dilution rate
-    'T'     : 24,  # temperature
-    'T_min' : 0,  # minimum temperature
-    'T_max' : 35,  # maximum temperature
-    'T_opt' : 27, # optimum temperature
-    'R0'    : 0.36, # nutrient concentration in culture medium
-    'C_in'  : 0.0, # toxicant concentration in fresh medium
-    'I'     : 100, # light intensity
-    'I_opt' : 120,
-    'mu_max' : 1.7380, # max. growth rate
-    'm_max'  : 0.0500, # max. mortality rate
-    'v_max'  : 0.0520, # max. P uptake
-    'k' : .5,     # half saturation constant for P uptake
-    'q_min' : 0.0011,
-    'q_max' : 0.0144,
-    'slope' : 2,
-    'EC50'  : 150,
-    'k_s'   : 0.0680 
-} 
 
 #%%
 
@@ -165,10 +141,7 @@ INHERITED_ATTRIBUTES = [
     'pmoa',
     'kD_h',
     'ED50_h',
-    'beta_h', 
-    #Pythoplankton:
-    'q_min',
-    'q_max'
+    'beta_h'
 ]
 
 
@@ -629,63 +602,3 @@ class IBM(mesa.Model):
             self.schedule.remove(a) # remove animal from scheduler
             self.deathlist.remove(a) # remove animal from death list
             self.num_agents -= 1
-
-class Algae: 
-
-    def assign_params(self, p):
-        """
-        Assign values from dictionary to IBM object
-        """
-        for (key,val) in zip(p.keys(), p.values()):
-            setattr(self, key, val)
-
-    def init_statevars(self):
-        """
-        Initialize model-level state variables
-        """
-        #self.num_agents = 0
-        self.biomass = 0
-        #self.unique_id_count = 0
-        self.t_day = 0
-        #self.X = 0.
-
-        # keeping track of different causes of mortality (cumulative counts)
-        #self.aging_mortality = 0
-        #self.starvation_mortality = 0
-        #self.toxicity_mortality = 0
-        self.m_max = 0 #constant max. mortality rate 
-        self.D = 0 #Dilution rate 
-
-    def __init__(self, glb, alg): 
-        self.init_statevars()
-        #self.schedule = mesa.time.RandomActivation(self)
-        self.assign_params(alg)
-        # define which model output should be collected
-        self.datacollector = mesa.DataCollector(
-            model_reporters = { # on the model level
-                't_day' : 't_day', # time in days
-                'X' : 'X', # resource biomass
-                'N_tot' : 'num_agents', # the total number of animals
-                'M_tot' : get_M_tot,  # the total biomass
-                'aging_mortality' : 'aging_mortality',
-                'starvation_mortality' : 'starvation_mortality',
-                'toxicity_mortality' : 'toxicity_mortality'
-                }, 
-            agent_reporters = agent_reporterdict
-        )
-    
-
-    # light dependence
-    def Ifunc(I, I_opt):
-        return (I/I_opt)*np.exp(1-(I/I_opt))
-
-    # # temperature dependence
-    def Tfunc(T, T_min, T_max, T_opt):
-        if T < T_opt:
-            T_x = T_min
-        else:
-            T_x = T_max
-        return np.exp(-2.3*np.power((T-T_opt)/(T_x-T_opt), 2))
-    Tfunc = np.vectorize(Tfunc)
-
-
