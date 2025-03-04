@@ -14,20 +14,26 @@ defaultparams_DEBIBM = Params(
 
     # Environmental parameters
     'V_patch':  0.5, # volume of a single patch
-    'Xdot_in': 1250, # resource input rate
+    'Xdot_in': 1250, # resource input rate #equivalent zur R0 *Potenziell Umrechnung 0.36
     'kX_out' : 0.1, # daily resource outflow rate
-    'C_W' : 0. # chemical stressor concentration
+    'C_W' : 0., # chemical stressor concentration #equivalent zur C_in 
+    'Temp': 27, #Temperature imput (init with optimal value)
+    #Env. for Algae
+    'I': 100 #ligth intensity 
+
+
+
     },
     { # animal parameters
     # DEB parameters
     'cv' : 0.1, # individual variability in DEB parameters, given as coefficient of variation 
-    'Idot_max_rel_mean': 5, # maximum specific ingestion rate; theoretical population average
+    'Idot_max_rel_mean': 5, # maximum specific ingestion rate; theoretical population average 
     'eta_IA_0': 0.5, # assimilation efficiency
-    'K_X': 0.5e3, # half-saturation constant for resource uptake
+    'K_X': 0.5e3, # half-saturation constant for resource uptake # equ. to K_s
     'kappa': 0.9, # somatic allocation fraction
     'eta_AS_0' : 0.9, # growth effieciency (transformation from assimilates to structure)
     'eta_SA' : 0.9, # structural mobilization efficiency (transformation from structure to asismilates)
-    'eta_AR_0': 0.95, # reproduction efficiency
+    'eta_AR_0': 0.95, # reproduction efficiency #equ. to mu_max
     'k_M_0': 0.55, # somatic maintenance rate constant; theoretical population average
     'S_p_mean': 9, # structural mass at puberty; theoretical population average
     'X_emb_int_mean': 0.675, # initial mass of the vitellus (~~ dry mass of an egg); theoretical population average

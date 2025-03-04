@@ -53,8 +53,10 @@ glb = { # global parameters
     'V_patch':  0.5, # volume of a single patch
     'Xdot_in': 1250, # resource input rate
     'kX_out' : 0.1, # daily resource outflow rate
-    'C_W' : 0. # chemical stressor concentration
-
+    'C_W' : 0., # chemical stressor concentration
+    'Temp': 27, #Temperature imput (init with optimal value)
+      #Env. for Algae
+    'I': 100 #ligth intensity 
     }
 
 '''
@@ -65,7 +67,7 @@ spc = { # animal parameters
     'cv' : 0.1, # individual variability in DEB parameters, given as coefficient of variation 
     'Idot_max_rel_mean': 5, # maximum specific ingestion rate; theoretical population average
     'eta_IA_0': 0.5, # assimilation efficiency
-    'K_X': 0.5e3, # half-saturation constant for resource uptake
+    'K_X': 0.068, # half-saturation constant for resource uptake #K_s in Phytoplankton#value form interface example  
     'kappa': 0.9, # somatic allocation fraction
     'eta_AS_0' : 0.9, # growth effieciency (transformation from assimilates to structure)
     'eta_SA' : 0.9, # structural mobilization efficiency (transformation from structure to asismilates)
@@ -163,13 +165,17 @@ INHERITED_ATTRIBUTES = [
     'pmoa',
     'kD_h',
     'ED50_h',
-    'beta_h'
+    'beta_h', 
+    #Pythoplankton:
+    'q_min',
+    'q_max'
 ]
 
 
 class Animal(mesa.Agent):
     """
     Definition of an animal. 
+    #AFA: hiere werden die spc vars initialisiert
     """
 
     def __init__(self, unique_id, model):
@@ -624,18 +630,62 @@ class IBM(mesa.Model):
             self.deathlist.remove(a) # remove animal from death list
             self.num_agents -= 1
 
+class Algae: 
 
-# algea model
+    def assign_params(self, p):
+        """
+        Assign values from dictionary to IBM object
+        """
+        for (key,val) in zip(p.keys(), p.values()):
+            setattr(self, key, val)
 
-# light dependence
-def Ifunc(I, I_opt):
-    return (I/I_opt)*np.exp(1-(I/I_opt))
+    def init_statevars(self):
+        """
+        Initialize model-level state variables
+        """
+        #self.num_agents = 0
+        self.biomass = 0
+        #self.unique_id_count = 0
+        self.t_day = 0
+        #self.X = 0.
 
-# # temperature dependence
-def Tfunc(T, T_min, T_max, T_opt):
-    if T < T_opt:
-        T_x = T_min
-    else:
-        T_x = T_max
-    return np.exp(-2.3*np.power((T-T_opt)/(T_x-T_opt), 2))
-Tfunc = np.vectorize(Tfunc)
+        # keeping track of different causes of mortality (cumulative counts)
+        #self.aging_mortality = 0
+        #self.starvation_mortality = 0
+        #self.toxicity_mortality = 0
+        self.m_max = 0 #constant max. mortality rate 
+        self.D = 0 #Dilution rate 
+
+    def __init__(self, glb, alg): 
+        self.init_statevars()
+        #self.schedule = mesa.time.RandomActivation(self)
+        self.assign_params(alg)
+        # define which model output should be collected
+        self.datacollector = mesa.DataCollector(
+            model_reporters = { # on the model level
+                't_day' : 't_day', # time in days
+                'X' : 'X', # resource biomass
+                'N_tot' : 'num_agents', # the total number of animals
+                'M_tot' : get_M_tot,  # the total biomass
+                'aging_mortality' : 'aging_mortality',
+                'starvation_mortality' : 'starvation_mortality',
+                'toxicity_mortality' : 'toxicity_mortality'
+                }, 
+            agent_reporters = agent_reporterdict
+        )
+    
+
+    # light dependence
+    def Ifunc(I, I_opt):
+        return (I/I_opt)*np.exp(1-(I/I_opt))
+
+    # # temperature dependence
+    def Tfunc(T, T_min, T_max, T_opt):
+        if T < T_opt:
+            T_x = T_min
+        else:
+            T_x = T_max
+        return np.exp(-2.3*np.power((T-T_opt)/(T_x-T_opt), 2))
+    Tfunc = np.vectorize(Tfunc)
+
+
