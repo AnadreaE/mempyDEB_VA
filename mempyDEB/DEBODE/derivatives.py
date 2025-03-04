@@ -93,4 +93,11 @@ def DEBBase(t, y, glb, spc, LS_max):
     DDot_j = (X_emb <= 0) * (spc['kD_j'] * (LS_max / (LS+1e-10)) * (glb['C_W'] - D_j)) - (D_j * (1/(S+1e-10)) * Sdot)
 
     return Sdot, Rdot, Xdot_emb, Xdot, DDot_j
+
+
+
+
+
+
+
             
