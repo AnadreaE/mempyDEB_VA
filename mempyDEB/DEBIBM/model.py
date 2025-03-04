@@ -53,10 +53,8 @@ glb = { # global parameters
     'V_patch':  0.5, # volume of a single patch
     'Xdot_in': 1250, # resource input rate
     'kX_out' : 0.1, # daily resource outflow rate
-    'C_W' : 0., # chemical stressor concentration
-    'Temp': 27, #Temperature imput (init with optimal value)
-      #Env. for Algae
-    'I': 100 #ligth intensity 
+    'C_W' : 0. # chemical stressor concentration
+
     }
 
 '''
@@ -67,7 +65,7 @@ spc = { # animal parameters
     'cv' : 0.1, # individual variability in DEB parameters, given as coefficient of variation 
     'Idot_max_rel_mean': 5, # maximum specific ingestion rate; theoretical population average
     'eta_IA_0': 0.5, # assimilation efficiency
-    'K_X': 0.068, # half-saturation constant for resource uptake #K_s in Phytoplankton#value form interface example  
+    'K_X': 0.5e3, # half-saturation constant for resource uptake
     'kappa': 0.9, # somatic allocation fraction
     'eta_AS_0' : 0.9, # growth effieciency (transformation from assimilates to structure)
     'eta_SA' : 0.9, # structural mobilization efficiency (transformation from structure to asismilates)
@@ -92,18 +90,9 @@ spc = { # animal parameters
     'pmoa' : 'R', # physiological mode of action
 
     # GUTS parameters
-    'kD_h' : .5, # dominant rate constant # equ. to K 
-    'ED50_h' : 150, # median effective damage #equ. to EC50
-    'beta_h' : 1., # DRC slope
-
-    #ALGAE parameters 
-    'q_min': 0.0011, #value from example interface #minimum concentration in the cells for the limiting nutrient (P)
-    'q_max': 0.0144, #value from example interface #maximum cell quota
-    'D': 0.5, #Dilution rate /tag 
-    'T_min': 0, #Minimum temperature 
-    'T_max': 35, #MAx. Temperature 
-    'T_opt': 27, #Optimale Temperature
-    'I_opt': 120 #optimal ligth intensity 
+    'kD_h' : .1, # dominant rate constant
+    'ED50_h' : 2, # median effective damage
+    'beta_h' : 1. # DRC slope
     }
 
 #%%
@@ -152,10 +141,7 @@ INHERITED_ATTRIBUTES = [
     'pmoa',
     'kD_h',
     'ED50_h',
-    'beta_h', 
-    #Pythoplankton:
-    'q_min',
-    'q_max'
+    'beta_h'
 ]
 
 
@@ -615,35 +601,3 @@ class IBM(mesa.Model):
             self.schedule.remove(a) # remove animal from scheduler
             self.deathlist.remove(a) # remove animal from death list
             self.num_agents -= 1
-
-    ######AB HIER PHYTOLANKTON #############
-    # light dependence
-    def Ifunc(I, I_opt):
-        return (I/I_opt)*np.exp(1-(I/I_opt))
-
-    # temperature dependence
-    def Tfunc(T, T_min, T_max, T_opt):
-        if T < T_opt:
-            T_x = T_min
-        else:
-            T_x = T_max
-        return np.exp(-2.3*np.power((T-T_opt)/(T_x-T_opt), 2))
-    Tfunc = np.vectorize(Tfunc)
-
-    # nutrient dependence
-    #This function varies between 0 and 1 according to Q values
-    def Qfunc(Q, q_min, A):
-        fract = (Q/(q_min*A))-1
-        return 1 - np.exp(-np.log2(fract))
-
-    # nutrient and quota dependence
-    def QPfunc(A, Q, P, q_min, q_max, K_X):
-        Q_depend = (q_max * A - Q) / (q_max - q_min)
-        P_depend = P / (K_X + P)#P muss von Vol abhängig sein 
-        return Q_depend * P_depend
-
-    # dose-response
-    def Cfunc(C, slope, EC50):
-        return 1 - (1 / (1 + np.exp(-slope * (np.log(C) - np.log(EC50)) )))
-
-
