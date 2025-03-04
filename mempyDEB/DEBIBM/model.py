@@ -165,8 +165,18 @@ class Animal(mesa.Agent):
     
     def init_statevars(self, spc):
         """
-        Initialize state variables. 
+        Initialize state variables.
+        #folgende Zeilen checken ob ok 
+        self.A = 0
+        self.Q = 0
+        self.P = 0
+        self.C = 0
+        self.Q_P = 0
+
+
         """
+
+
 
         self.X_emb = self.X_emb_int # it is important that X_emb is set **before** individual variability is called
         self.individual_variability() 
@@ -559,9 +569,11 @@ class IBM(mesa.Model):
         self.datacollector = mesa.DataCollector(
             model_reporters = { # on the model level
                 't_day' : 't_day', # time in days
-                'X' : 'X', # resource biomass
-                'N_tot' : 'num_agents', # the total number of animals
-                'M_tot' : get_M_tot,  # the total biomass
+                #'X' : 'X', # resource biomass
+                #'A': 'A' #Algae Biomass 
+                #'N_tot' : 'num_agents', # the total number of animals
+                'M_tot' : get_M_tot,  # the total biomass #equ. to 'A'  
+                'Q': 'Q',  #Internal concentration
                 'aging_mortality' : 'aging_mortality',
                 'starvation_mortality' : 'starvation_mortality',
                 'toxicity_mortality' : 'toxicity_mortality'
@@ -602,3 +614,35 @@ class IBM(mesa.Model):
             self.schedule.remove(a) # remove animal from scheduler
             self.deathlist.remove(a) # remove animal from death list
             self.num_agents -= 1
+
+    ######AB HIER PHYTOLANKTON #############
+    # light dependence
+    def Ifunc(I, I_opt):
+        return (I/I_opt)*np.exp(1-(I/I_opt))
+
+    # temperature dependence
+    def Tfunc(Temp, T_min, T_max, T_opt):
+        if Temp < T_opt:
+            T_x = T_min
+        else:
+            T_x = T_max
+        return np.exp(-2.3*np.power((T-T_opt)/(T_x-T_opt), 2))
+    Tfunc = np.vectorize(Tfunc)
+
+    # nutrient dependence
+    #This function varies between 0 and 1 according to Q values
+    def Qfunc(Q, q_min, A):
+        fract = (Q/(q_min*A))-1
+        return 1 - np.exp(-np.log2(fract))
+
+    # nutrient and quota dependence
+    def QPfunc(A, Q, P, q_min, q_max, K_X):
+        Q_depend = (q_max * A - Q) / (q_max - q_min)
+        P_depend = (P*V_patch) / (K_X + (P*V_patch) )#P abhängig von Vol  
+        return Q_depend * P_depend
+
+    # dose-response
+    def Cfunc(C, slope, EC50):
+        return 1 - (1 / (1 + np.exp(-slope * (np.log(C) - np.log(EC50)) )))
+
+
